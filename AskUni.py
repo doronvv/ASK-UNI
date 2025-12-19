@@ -29,8 +29,8 @@ def load_data():
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # בניית הנתיב המלא לקבצים
-    path_admission = os.path.join(current_dir, "bgu_admission_complete.csv")
-    path_projects = os.path.join(current_dir, "Projects_Classified.csv")
+    path_admission = os.path.join(current_dir, "bgu_1.csv")  # השם החדש של קובץ הקבלה
+    path_projects = os.path.join(current_dir, "bgu_2.csv")    # השם החדש של קובץ הפרויקטים
 
     # טעינת קובץ קבלה
     try:
@@ -114,4 +114,5 @@ if prompt := st.chat_input("הקלד את השאלה שלך כאן..."):
         st.session_state.messages.append({"role": "assistant", "content": response.text})
 
     except Exception as e:
+
         st.error(f"שגיאה בקבלת תשובה: {e}")
