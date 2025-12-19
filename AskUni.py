@@ -2,70 +2,83 @@ import streamlit as st
 import google.generativeai as genai
 import pandas as pd
 import warnings
-import os  # <--- הוספנו את זה כדי לזהות מיקומים במחשב
+import os
 
 # --- 1. הגדרות וטיפול באזהרות ---
 warnings.filterwarnings("ignore")
+st.set_page_config(page_title="בוט תנאי קבלה", layout="wide", page_icon="🎓")
 
-st.set_page_config(page_title="בוט תנאי קבלה ופרויקטים", layout="wide", page_icon="🎓")
-
-# --- 2. סידור RTL (עברית) ---
+# --- 2. עיצוב RTL (מימין לשמאל) ---
 st.markdown("""
 <style>
     .stApp { direction: rtl; text-align: right; }
     .stChatMessage { text-align: right; direction: rtl; }
-    p, h1, h2, h3 { text-align: right; }
+    p, h1, h2, h3, div { text-align: right; }
+    .stTextInput > div > div > input { direction: rtl; text-align: right; }
 </style>
 """, unsafe_allow_html=True)
 
-
-# --- 3. טעינת הטבלאות (הגרסה המתוקנת והחכמה) ---
+# --- 3. טעינת נתונים חכמה ---
 @st.cache_data
 def load_data():
     data_dict = {}
-
-    # משיג את הנתיב של התיקייה שבה נמצא הקובץ הזה (AskUni.py)
-    # זה פותר את הבעיה שהטרמינל לא מוצא את הקבצים
+    
+    # מוצא את התיקייה הנוכحية של הקובץ
     current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # --- עדכון שמות הקבצים החדשים כאן ---
+    # ודא שהקבצים בגיטהאב נקראים בדיוק כך (כולל .csv)
+    path_admission = os.path.join(current_dir, "bgu_1.csv") 
+    path_projects = os.path.join(current_dir, "bgu_2.csv")
 
-    # בניית הנתיב המלא לקבצים
-    path_admission = os.path.join(current_dir, "bgu_1.csv")  # השם החדש של קובץ הקבלה
-    path_projects = os.path.join(current_dir, "bgu_2.csv")    # השם החדש של קובץ הפרויקטים
-
-    # טעינת קובץ קבלה
+    # טעינת קובץ קבלה (bgu_1)
     try:
-        df_admission = pd.read_csv(path_admission)
-        data_dict["admission"] = df_admission
-    except Exception:
+        if os.path.exists(path_admission):
+            data_dict["admission"] = pd.read_csv(path_admission)
+        else:
+            data_dict["admission"] = None
+    except:
         data_dict["admission"] = None
 
-    # טעינת קובץ פרויקטים
+    # טעינת קובץ פרויקטים (bgu_2)
     try:
-        df_projects = pd.read_csv(path_projects)
-        data_dict["projects"] = df_projects
-    except Exception:
+        if os.path.exists(path_projects):
+            data_dict["projects"] = pd.read_csv(path_projects)
+        else:
+            data_dict["projects"] = None
+    except:
         data_dict["projects"] = None
 
     return data_dict
 
-
-# טעינת הנתונים למשתנה
+# טעינת המידע
 all_data = load_data()
 
-# בדיקה והצגת שגיאות אם קבצים חסרים
+# הצגת שגיאות ברורות אם קבצים חסרים
 if all_data["admission"] is None:
-    st.error("⚠️ לא הצלחתי למצוא את הקובץ: bgu_admission_complete.csv (וודא שהוא באותה תיקייה עם הקוד)")
+    st.error("⚠️ שגיאה: לא מצאתי את הקובץ bgu_1.csv")
 if all_data["projects"] is None:
-    st.error("⚠️ לא הצלחתי למצוא את הקובץ: Projects_Classified.csv (וודא שהוא באותה תיקייה עם הקוד)")
+    st.error("⚠️ שגיאה: לא מצאתי את הקובץ bgu_2.csv")
 
-# --- 4. הגדרת המודל ---
-api_key = "YOUR_API_KEY"
-genai.configure(api_key="AIzaSyDE1qKjnw4qpjALtD7713rM0hq1w8P02HE")
-model = genai.GenerativeModel('gemini-2.5-flash')
+# --- 4. הגדרת המודל בצורה מאובטחת ---
+# הקוד הזה בודק אם יש מפתח ב-Secrets של הענן.
+# אם אין (למשל בריצה מקומית), הוא יבקש ממך להכניס ידנית.
+if "GOOGLE_API_KEY" in st.secrets:
+    api_key = st.secrets["GOOGLE_API_KEY"]
+else:
+    api_key = st.text_input("הכנס מפתח Google API:", type="password")
+
+if not api_key:
+    st.warning("נא להזין מפתח API כדי שהבוט יוכל לעבוד.")
+    st.stop()
+
+# הגדרת המודל
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 # --- 5. ממשק המשתמש ---
-st.title("🎓 בוט מידע: קבלה ופרויקטים")
-st.write("שאל אותי על תנאי קבלה או על פרויקטים מסווגים.")
+st.title("🎓 בוט מידע: אוניברסיטת בן גוריון")
+st.write("שאל אותי בחופשיות על תנאי קבלה או פרויקטים.")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -74,45 +87,39 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 6. הלוגיקה החכמה ---
-if prompt := st.chat_input("הקלד את השאלה שלך כאן..."):
+# --- 6. לוגיקה ---
+if prompt := st.chat_input("מה תרצה לדעת?"):
     with st.chat_message("user"):
         st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    try:
-        with st.chat_message("assistant"):
-            with st.spinner('מחפש בנתונים...'):
-
-                # הכנת המידע למודל
-                context_str = ""
-
+    with st.chat_message("assistant"):
+        with st.spinner('בודק נתונים...'):
+            try:
+                context = ""
+                # בניית ההקשר למודל מתוך הקבצים
                 if all_data["admission"] is not None:
-                    context_str += f"\n--- טבלת תנאי קבלה (Admission) ---\n{all_data['admission'].to_string()}\n"
-
+                    context += f"\n=== נתוני קבלה (Admission) ===\n{all_data['admission'].to_string()}\n"
                 if all_data["projects"] is not None:
-                    context_str += f"\n--- טבלת פרויקטים (Projects) ---\n{all_data['projects'].to_string()}\n"
+                    context += f"\n=== נתוני פרויקטים (Projects) ===\n{all_data['projects'].to_string()}\n"
+                
+                if context == "":
+                    st.error("אין נתונים זמינים במערכת.")
+                    st.stop()
 
-                if context_str == "":
-                    context_str = "אין נתונים זמינים כרגע."
-
-                # בניית ההנחיה המלאה
                 full_prompt = (
-                    f"אתה עוזר חכם. יש לך גישה לשתי טבלאות נתונים שונות (מופיעות למטה).\n"
-                    f"1. טבלת תנאי קבלה.\n"
-                    f"2. טבלת פרויקטים.\n"
-                    f"ענה על שאלת המשתמש אך ורק על סמך המידע בטבלאות האלו.\n"
-                    f"אם המידע לא מופיע באף אחת מהטבלאות, ציין זאת במפורש.\n\n"
-                    f"המידע מהטבלאות:\n{context_str}\n\n"
-                    f"שאלה: {prompt}"
+                    f"אתה יועץ לימודים מומחה באוניברסיטת בן גוריון.\n"
+                    f"ענה על השאלה אך ורק לפי הנתונים המצורפים למטה.\n"
+                    f"אם המידע לא קיים בנתונים, תגיד שאתה לא יודע.\n"
+                    f"אל תמציא מידע שלא מופיע בטבלאות.\n\n"
+                    f"הנתונים:\n{context}\n\n"
+                    f"שאלה: {prompt}\n"
+                    f"תשובה (בעברית):"
                 )
-
-                # שליחה לגוגל
+                
                 response = model.generate_content(full_prompt)
                 st.markdown(response.text)
-
-        st.session_state.messages.append({"role": "assistant", "content": response.text})
-
-    except Exception as e:
-
-        st.error(f"שגיאה בקבלת תשובה: {e}")
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+                
+            except Exception as e:
+                st.error(f"שגיאה: {e}")
