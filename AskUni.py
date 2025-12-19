@@ -78,7 +78,14 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 
 # --- 5. ממשק המשתמש ---
 st.title("🎓 בוט מידע: אוניברסיטת בן גוריון")
-st.write("שאל אותי בחופשיות על תנאי קבלה או פרויקטים.")
+st.write("שאל אותי בחופשיות על תנאי קבלה או אתר פרויקטים של חשמל.")
+st.info("""
+💡 **שאלות לדוגמה שכדאי לנסות:**
+* מה תנאי הקבלה להנדסת חשמל?
+* על מה פרויקט ASKUNI עושה ?
+* מי המנחה של פרויקט ASKUNI?
+* לשאלות כאלו אני יוכל לעזור לך?
+""")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -123,6 +130,7 @@ if prompt := st.chat_input("מה תרצה לדעת?"):
                 
             except Exception as e:
                 st.error(f"שגיאה: {e}")
+
 
 
 
