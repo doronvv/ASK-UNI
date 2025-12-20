@@ -62,7 +62,6 @@ if all_data["projects"] is None:
 
 # --- 4. הגדרת המודל בצורה מאובטחת ---
 # הקוד הזה בודק אם יש מפתח ב-Secrets של הענן.
-# אם אין (למשל בריצה מקומית), הוא יבקש ממך להכניס ידנית.
 if "GOOGLE_API_KEY" in st.secrets:
     api_key = st.secrets["GOOGLE_API_KEY"]
 else:
@@ -99,7 +98,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 6. לוגיקה ---
+# --- 6. לוגיקה (עם הוספת הזיכרון) ---
 if prompt := st.chat_input("מה תרצה לדעת?"):
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -119,12 +118,22 @@ if prompt := st.chat_input("מה תרצה לדעת?"):
                     st.error("אין נתונים זמינים במערכת.")
                     st.stop()
 
+                # --- השינוי שביצעתי כאן: בניית מחרוזת זיכרון ---
+                history_str = ""
+                for msg in st.session_state.messages:
+                    role_name = "משתמש" if msg["role"] == "user" else "עוזר"
+                    history_str += f"{role_name}: {msg['content']}\n"
+
+                # עדכון הפרומפט שיכלול גם את ההיסטוריה
                 full_prompt = (
                     f"אתה יועץ לימודים מומחה באוניברסיטת בן גוריון.\n"
                     f"ענה על השאלה אך ורק לפי הנתונים המצורפים למטה.\n"
                     f"אם המידע לא קיים בנתונים, תגיד שאתה לא יודע.\n"
                     f"אל תמציא מידע שלא מופיע בטבלאות.\n\n"
                     f"הנתונים:\n{context}\n\n"
+                    f"--- היסטוריית השיחה (הקשר) ---\n"
+                    f"{history_str}\n" 
+                    f"------------------------------\n"
                     f"שאלה: {prompt}\n"
                     f"תשובה (בעברית):"
                 )
@@ -135,8 +144,3 @@ if prompt := st.chat_input("מה תרצה לדעת?"):
                 
             except Exception as e:
                 st.error(f"שגיאה: {e}")
-
-
-
-
-
