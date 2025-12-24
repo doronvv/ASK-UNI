@@ -6,7 +6,7 @@ import os
 
 # --- 1. הגדרות וטיפול באזהרות ---
 warnings.filterwarnings("ignore")
-st.set_page_config(page_title="בוט תנאי קבלה", layout="wide", page_icon="🎓")
+st.set_page_config(page_title="בוט מידע אקדמי - בן גוריון", layout="wide", page_icon="🎓")
 
 # --- 2. עיצוב RTL (מימין לשמאל) ---
 st.markdown("""
@@ -26,12 +26,15 @@ def load_data():
     # מוצא את התיקייה הנוכحية של הקובץ
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # --- עדכון שמות הקבצים החדשים כאן ---
-    # ודא שהקבצים בגיטהאב נקראים בדיוק כך (כולל .csv)
+    # --- הגדרת שמות הקבצים ---
+    # bgu_1 = קבלה (כמו שהיה בענן)
+    # bgu_2 = פרויקטים (כמו שהיה בענן)
+    # grades.csv = הקובץ החדש שהוספת
     path_admission = os.path.join(current_dir, "bgu_1.csv") 
     path_projects = os.path.join(current_dir, "bgu_2.csv")
+    path_grades = os.path.join(current_dir, "grades.csv")
 
-    # טעינת קובץ קבלה (bgu_1)
+    # טעינת קובץ קבלה
     try:
         if os.path.exists(path_admission):
             data_dict["admission"] = pd.read_csv(path_admission)
@@ -40,7 +43,7 @@ def load_data():
     except:
         data_dict["admission"] = None
 
-    # טעינת קובץ פרויקטים (bgu_2)
+    # טעינת קובץ פרויקטים
     try:
         if os.path.exists(path_projects):
             data_dict["projects"] = pd.read_csv(path_projects)
@@ -48,6 +51,15 @@ def load_data():
             data_dict["projects"] = None
     except:
         data_dict["projects"] = None
+
+    # טעינת קובץ ציונים (החדש)
+    try:
+        if os.path.exists(path_grades):
+            data_dict["grades"] = pd.read_csv(path_grades)
+        else:
+            data_dict["grades"] = None
+    except:
+        data_dict["grades"] = None
 
     return data_dict
 
@@ -59,9 +71,11 @@ if all_data["admission"] is None:
     st.error("⚠️ שגיאה: לא מצאתי את הקובץ bgu_1.csv")
 if all_data["projects"] is None:
     st.error("⚠️ שגיאה: לא מצאתי את הקובץ bgu_2.csv")
+if all_data["grades"] is None:
+    st.error("⚠️ שגיאה: לא מצאתי את הקובץ grades.csv (וודא שהעלית אותו ל-GitHub)")
 
 # --- 4. הגדרת המודל בצורה מאובטחת ---
-# הקוד הזה בודק אם יש מפתח ב-Secrets של הענן.
+# שימוש ב-Secrets של הענן
 if "GOOGLE_API_KEY" in st.secrets:
     api_key = st.secrets["GOOGLE_API_KEY"]
 else:
@@ -75,21 +89,28 @@ if not api_key:
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
-# --- 5. ממשק המשתמש ---
-st.title("🎓 בוט מידע: אוניברסיטת בן גוריון")
-st.write("שאל אותי בחופשיות על תנאי קבלה או אתר פרויקטים של חשמל.")
-st.info("""
-💡 **שאל אותי על תנאי קבלה או על פרויקטים מסווגים**
-* שאל אותי בחופשיות על תנאי קבלה או אתר פרויקטים של חשמל
-""")
-with st.expander("📌 לחץ כאן כדי לראות שאלות לדוגמה"):
-    st.write("1. מה תנאי הקבלה ______ (שם התואר שאתה מחפש)?")
-    st.write("2. איזה תארים יש בהנדסה?")
-    st.write("3. יש פרויקט בשם AskUni ?")
-    st.write("4. מי המנחה של פרויקט AskUni?")
-    st.write("5. באיזה נושא פרויקט ASKUNI עוסק ?")
-st.caption("הבוט מבוסס על נתונים רשמיים אך עשויים לחול שינויים.")
+# --- 5. ממשק המשתמש (מעודכן לפי הבקשה שלך) ---
+st.title("🎓 בוט מידע: בן גוריון")
+st.subheader("תנאי קבלה | ספר פרויקטים | ממוצעי קורסים")
 
+st.info("""
+💡 **שאל אותי בחופשיות על:**
+* תנאי קבלה למחלקות השונות
+* פרויקטים (הנדסת חשמל ומחשבים)
+* ממוצעי ציונים בקורסים (חדש!)
+""")
+
+with st.expander("📌 לחץ כאן לשאלות לדוגמה"):
+    st.write("**קבלה:** מה תנאי הקבלה להנדסת חשמל ?")
+    st.write(" מה תנאי הקבלה ______ (שם התואר שאתה מחפש)?")
+    st.write(" איזה תארים יש בהנדסה?")
+    st.write("**פרויקטים:** מי המנחה של פרויקט AskUni?")
+    st.write("באיזה נושא פרויקט ASKUNI עוסק ?")
+    st.write("**ציונים:** מה היה הממוצע בקורס חדווא 1 בשנת ____(שנים בין 2025-2022) אפשר להוסיף גם סמסטר?")
+    st.write("**משולב:** מה הממוצע בפיזיקה 1 ומי מלמד את זה?")
+
+st.caption("הבוט מבוסס על נתונים רשמיים, אך ייתכנו שינויים.")
+st.caption("שימו לב - כל המידע שמסופק עשוי להכיל טעויות וחשוב לבדוק ולאמת מידע חשוב באמצעות אתר האוניברסיטה")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -98,43 +119,52 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 6. לוגיקה (עם הוספת הזיכרון) ---
+# --- 6. לוגיקה (כולל ציונים וזיכרון) ---
 if prompt := st.chat_input("מה תרצה לדעת?"):
     with st.chat_message("user"):
         st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     with st.chat_message("assistant"):
-        with st.spinner('בודק נתונים...'):
+        with st.spinner('מעבד נתונים...'):
             try:
-                context = ""
-                # בניית ההקשר למודל מתוך הקבצים
+                context_str = ""
+                # 1. נתוני קבלה
                 if all_data["admission"] is not None:
-                    context += f"\n=== נתוני קבלה (Admission) ===\n{all_data['admission'].to_string()}\n"
+                    context_str += f"\n=== נתוני קבלה (Admission) ===\n{all_data['admission'].to_string()}\n"
+                # 2. נתוני פרויקטים
                 if all_data["projects"] is not None:
-                    context += f"\n=== נתוני פרויקטים (Projects) ===\n{all_data['projects'].to_string()}\n"
+                    context_str += f"\n=== נתוני פרויקטים (Projects) ===\n{all_data['projects'].to_string()}\n"
+                # 3. נתוני ציונים (החדש)
+                if all_data["grades"] is not None:
+                    context_str += f"\n=== טבלת ממוצעי קורסים וציונים (Grades) ===\n{all_data['grades'].to_string()}\n"
                 
-                if context == "":
+                if context_str == "":
                     st.error("אין נתונים זמינים במערכת.")
                     st.stop()
 
-                # --- השינוי שביצעתי כאן: בניית מחרוזת זיכרון ---
+                # בניית היסטוריית השיחה
                 history_str = ""
                 for msg in st.session_state.messages:
                     role_name = "משתמש" if msg["role"] == "user" else "עוזר"
                     history_str += f"{role_name}: {msg['content']}\n"
 
-                # עדכון הפרומפט שיכלול גם את ההיסטוריה
+                # הפרומפט המלא
                 full_prompt = (
-                    f"אתה יועץ לימודים מומחה באוניברסיטת בן גוריון.\n"
-                    f"ענה על השאלה אך ורק לפי הנתונים המצורפים למטה.\n"
-                    f"אם המידע לא קיים בנתונים, תגיד שאתה לא יודע.\n"
-                    f"אל תמציא מידע שלא מופיע בטבלאות.\n\n"
-                    f"הנתונים:\n{context}\n\n"
+                    f"אתה עוזר חכם ואדיב לסטודנטים בבן גוריון.\n"
+                    f"יש לך גישה ל-3 טבלאות נתונים:\n"
+                    f"1. תנאי קבלה.\n"
+                    f"2. פרויקטים.\n"
+                    f"3. ציונים וממוצעי קורסים (Grades).\n\n"
+                    f"הנחיות:\n"
+                    f"- ענה אך ורק על סמך המידע בטבלאות המצורפות.\n"
+                    f"- אם שאלו על ציון בקורס, חפש לפי שם הקורס או המספר שלו בטבלת הציונים. שים לב לשנה ולסמסטר.\n"
+                    f"- אם המידע לא קיים, ציין זאת.\n\n"
+                    f"המידע מהטבלאות:\n{context_str}\n\n"
                     f"--- היסטוריית השיחה (הקשר) ---\n"
                     f"{history_str}\n" 
                     f"------------------------------\n"
-                    f"שאלה: {prompt}\n"
+                    f"שאלה נוכחית: {prompt}\n"
                     f"תשובה (בעברית):"
                 )
                 
